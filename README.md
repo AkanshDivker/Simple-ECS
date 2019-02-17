@@ -75,6 +75,7 @@ With ECS, we can focus on processing only the data we need. There is no extra da
 
 ECS and the Job System perform very well together, giving performance by default in your code. ECS separates the data from the logic, by putting it into data containers called **Components**, and functionality into **Systems**.
 
+```c#
     namespace SimpleECS
     {
         /*
@@ -89,13 +90,14 @@ ECS and the Job System perform very well together, giving performance by default
     
         public class MoveSpeedComponent : ComponentDataWrapper<MoveSpeed> { }
     }
-
+```
 ### ECS
 
 Using ECS requires a different way of thinking than the traditional object oriented system. The way you think about objects and Unity should change. An entity isn't a container, it is just a reference to data. 
 
 Systems contain all of the functionality. They process entities based on a filter, and provide performance by default.
 
+```c#
     namespace SimpleECS
     {
         /*
@@ -131,6 +133,7 @@ Systems contain all of the functionality. They process entities based on a filte
             }
         }
     }
+```
 
 ### Final Notes
 
