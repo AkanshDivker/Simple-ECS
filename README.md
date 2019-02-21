@@ -61,7 +61,7 @@ The Prototypes folder contains empty prefab objects which only contain a MeshRen
 
 The Prototypes folder contains prototypes for the environment objects, Player, and ScoreBox.
 
-![](https://i.imgur.com/rcVBIzm.png)
+![](https://i.imgur.com/vCn6ddj.png)
 
 ### Scripts
 
@@ -73,7 +73,7 @@ The Scripts folder is divided into two sub-folders. One for Components, which ar
 
 The project hierarchy contains some simple standard components. A directional light, canvas, and the camera being the most standard. In addition, we have an empty game object that contains our `SystemManager` script. The prototypes for the scene are added and placed under the empty Prototypes GameObject for organization.
 
-![](https://i.imgur.com/qowOlft.png)
+![](https://i.imgur.com/OqXJCNQ.png)
 
 ## Entity Component System (ECS)
 
