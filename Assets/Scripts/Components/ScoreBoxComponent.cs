@@ -11,6 +11,5 @@ namespace SimpleECS
     {
         public Entity entity;
     }
-
-    public class ScoreBoxComponent : ComponentDataWrapper<ScoreBox> { }
+    public class ScoreBoxProxy : ComponentDataProxy<ScoreBox> { }
 }

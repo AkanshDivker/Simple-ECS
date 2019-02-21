@@ -11,10 +11,8 @@ GameObject:
   - component: {fileID: 7614789541233994663}
   - component: {fileID: 7614789541233994668}
   - component: {fileID: 7614789541233994659}
-  - component: {fileID: 7614789541233994658}
-  - component: {fileID: 7614789541233994657}
   m_Layer: 0
-  m_Name: Top Wall
+  m_Name: Wall
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -67,39 +65,3 @@ MonoBehaviour:
     layer: 0
     castShadows: 1
     receiveShadows: 1
---- !u!114 &7614789541233994658
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7614789541233994662}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_GeneratorAsset: {fileID: 0}
-  m_Script: {fileID: 11500000, guid: 0af0db853e732453799566a0e597993c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_SerializedData:
-    Value:
-      x: -15.75
-      y: 0.5
-      z: 0
---- !u!114 &7614789541233994657
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7614789541233994662}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_GeneratorAsset: {fileID: 0}
-  m_Script: {fileID: 11500000, guid: 1060dcfa4c8484da9a56580361de6f9f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_SerializedData:
-    Value:
-      x: 1.5
-      y: 1
-      z: 33

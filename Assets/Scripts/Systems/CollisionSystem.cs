@@ -13,39 +13,50 @@ namespace SimpleECS
     public class CollisionSystem : JobComponentSystem
     {
         // BarrierSystem definition in order to access the EntityCommandBuffer
-        public class Barrier : BarrierSystem { }
+        public class CollisionSystemBarrier : BarrierSystem { }
 
-        // Filter data for ScoreBox entities with components
-        public struct ScoreBoxGroup
+        // Define a ComponentGroup for ScoreBox entities
+        ComponentGroup ScoreBoxGroup;
+        CollisionSystemBarrier Barrier;
+
+        protected override void OnCreateManager()
         {
-            [ReadOnly] public ComponentDataArray<Position> position;
-            [ReadOnly] public ComponentDataArray<ScoreBox> scoreBox;
-        }
+            // Get or Create the BarrierSystem
+            Barrier = World.Active.GetOrCreateManager<CollisionSystemBarrier>();
 
-        [Inject] [ReadOnly] private ScoreBoxGroup scoreBoxGroup;
-        [Inject] [ReadOnly] private Barrier barrier;
+            // Query for ScoreBoxes with following components
+            var scoreBoxQuery = new EntityArchetypeQuery
+            {
+                All = new ComponentType[] { typeof(ScoreBox), typeof(Position) }
+            };
+
+            // Get the ComponentGroup
+            ScoreBoxGroup = GetComponentGroup(scoreBoxQuery);
+        }
 
         [BurstCompile]
         struct CollisionJob : IJobProcessComponentData<Player, Position>
         {
-            [ReadOnly] public EntityCommandBuffer buffer;
-            [ReadOnly] public ComponentDataArray<Position> scoreBoxPosition;
-            [ReadOnly] public ComponentDataArray<ScoreBox> scoreBox;
+            // Access to the EntityCommandBuffer to Destroy entity
+            [ReadOnly] public EntityCommandBuffer CommandBuffer;
+
+            [ReadOnly] public NativeArray<Position> ScoreBoxPositions;
+            [ReadOnly] public NativeArray<ScoreBox> ScoreBoxes;
 
             public void Execute(ref Player player, [ReadOnly] ref Position position)
             {
                 float dist = 0.0f;
 
-                for (int i = 0; i < scoreBoxPosition.Length; i++)
+                for (int i = 0; i < ScoreBoxPositions.Length; i++)
                 {
                     // Calculate the distance between the ScoreBox and Player
-                    dist = math.distance(position.Value, scoreBoxPosition[i].Value);
+                    dist = math.distance(position.Value, ScoreBoxPositions[i].Value);
 
                     // If close enough for collision, add to the score and destroy the entity
                     if (dist < 2.0f)
                     {
                         player.Score += 1;
-                        buffer.DestroyEntity(scoreBox[i].entity);
+                        CommandBuffer.DestroyEntity(ScoreBoxes[i].entity);
                     }
                 }
             }
@@ -53,14 +64,29 @@ namespace SimpleECS
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
+            NativeArray<Position> scoreBoxPosition = ScoreBoxGroup.ToComponentDataArray<Position>(Allocator.TempJob);
+            NativeArray<ScoreBox> scoreBox = ScoreBoxGroup.ToComponentDataArray<ScoreBox>(Allocator.TempJob);
+
             CollisionJob collisionJob = new CollisionJob
             {
-                scoreBoxPosition = scoreBoxGroup.position,
-                scoreBox = scoreBoxGroup.scoreBox,
-                buffer = barrier.CreateCommandBuffer(),
+                ScoreBoxPositions = scoreBoxPosition,
+                ScoreBoxes = scoreBox,
+                CommandBuffer = Barrier.CreateCommandBuffer(),
             };
 
-            return collisionJob.Schedule(this, inputDeps);
+            JobHandle collisionJobHandle = collisionJob.Schedule(this, inputDeps);
+
+            // Pass final handle to Barrier to ensure dependency completion
+            Barrier.AddJobHandleForProducer(collisionJobHandle);
+
+            // Wait for job to be completed
+            collisionJobHandle.Complete();
+
+            // Dispose NativeArray
+            scoreBoxPosition.Dispose();
+            scoreBox.Dispose();
+
+            return collisionJobHandle;
         }
     }
 }

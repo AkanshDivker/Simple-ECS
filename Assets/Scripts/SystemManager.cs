@@ -16,13 +16,6 @@ namespace SimpleECS
     {
         #region Editor Settings
 
-        [Header("Environment Prefabs")]
-        public GameObject groundPrefab;
-        public GameObject leftWallPrefab;
-        public GameObject rightWallPrefab;
-        public GameObject topWallPrefab;
-        public GameObject bottomWallPrefab;
-
         [Header("UI Objects")]
         public Text scoreValue;
 
@@ -40,9 +33,13 @@ namespace SimpleECS
 
         private EntityArchetype scoreBoxArchetype;
         private EntityArchetype playerArchetype;
+        private EntityArchetype wallArchetype;
+        private EntityArchetype groundArchetype;
 
         private RenderMesh scoreBoxMesh;
         private RenderMesh playerMesh;
+        private RenderMesh wallMesh;
+        private RenderMesh groundMesh;
 
         private Entity player;
 
@@ -61,13 +58,21 @@ namespace SimpleECS
 
             // Create entity archetypes with their corresponding components and get their mesh
             scoreBoxArchetype = manager.CreateArchetype(typeof(ScoreBox), typeof(Position), typeof(Rotation), typeof(RotationSpeed), typeof(Scale));
-            scoreBoxMesh = GetMeshFromPrototype("ScoreBox");
+            scoreBoxMesh = GetMeshFromPrototype("ScoreBoxProto");
 
             playerArchetype = manager.CreateArchetype(typeof(Player), typeof(Position), typeof(Scale), typeof(MoveSpeed));
-            playerMesh = GetMeshFromPrototype("PlayerBall");
+            playerMesh = GetMeshFromPrototype("PlayerProto");
 
-            // Add remaining environment by using prefabs assigned through the editor
-            AddEnvironment();
+            wallArchetype = manager.CreateArchetype(typeof(Position), typeof(Scale));
+            wallMesh = GetMeshFromPrototype("WallProto");
+
+            groundArchetype = manager.CreateArchetype(typeof(Position), typeof(Scale));
+            groundMesh = GetMeshFromPrototype("GroundProto");
+
+            // Create the remaining entities for the scene
+            AddGround();
+            AddWalls();
+
             AddScoreBoxes();
             AddPlayer();
         }
@@ -99,18 +104,45 @@ namespace SimpleECS
             scoreValue.text = playerScore.ToString();
         }
 
-        // Instantiate the environment prefabs in the scene
-        private void AddEnvironment()
+        private void AddGround()
         {
-            NativeArray<Entity> environmentEntities = new NativeArray<Entity>(5, Allocator.Persistent);
+            NativeArray<Entity> groundEntities = new NativeArray<Entity>(1, Allocator.Persistent);
+            manager.CreateEntity(groundArchetype, groundEntities);
 
-            manager.Instantiate(groundPrefab, environmentEntities);
-            manager.Instantiate(leftWallPrefab, environmentEntities);
-            manager.Instantiate(rightWallPrefab, environmentEntities);
-            manager.Instantiate(topWallPrefab, environmentEntities);
-            manager.Instantiate(bottomWallPrefab, environmentEntities);
+            manager.SetComponentData(groundEntities[0], new Position { Value = new float3(0.0f, 0.0f, 0.0f) });
+            manager.SetComponentData(groundEntities[0], new Scale { Value = new float3(3.0f, 1.0f, 3.0f) });
+            manager.AddSharedComponentData(groundEntities[0], groundMesh);
 
-            environmentEntities.Dispose();
+            groundEntities.Dispose();
+        }
+
+        // Instantiate the environment prefabs in the scene
+        private void AddWalls()
+        {
+            // 4 Walls in Total
+            NativeArray<Entity> wallEntities = new NativeArray<Entity>(4, Allocator.Persistent);
+            manager.CreateEntity(wallArchetype, wallEntities);
+
+            // Set the RenderMesh for all the walls
+            for (int i = 0; i < 4; i++)
+            {
+                manager.AddSharedComponentData(wallEntities[i], wallMesh);
+            }
+
+            // Set component data for each wall
+            manager.SetComponentData(wallEntities[0], new Position { Value = new float3(-15.0f, 0.5f, 0.0f) });
+            manager.SetComponentData(wallEntities[0], new Scale { Value = new float3(1.0f, 1.0f, 31.0f) });
+
+            manager.SetComponentData(wallEntities[1], new Position { Value = new float3(15.0f, 0.5f, 0.0f) });
+            manager.SetComponentData(wallEntities[1], new Scale { Value = new float3(1.0f, 1.0f, 31.0f) });
+
+            manager.SetComponentData(wallEntities[2], new Position { Value = new float3(0.0f, 0.5f, -15.0f) });
+            manager.SetComponentData(wallEntities[2], new Scale { Value = new float3(30.0f, 1.0f, 1.0f) });
+
+            manager.SetComponentData(wallEntities[3], new Position { Value = new float3(0.0f, 0.5f, 15.0f) });
+            manager.SetComponentData(wallEntities[3], new Scale { Value = new float3(30.0f, 1.0f, 1.0f) });
+
+            wallEntities.Dispose();
         }
 
         // Create the Player entity and assign the corresponding components
@@ -161,7 +193,7 @@ namespace SimpleECS
         private static RenderMesh GetMeshFromPrototype(string prototypeName)
         {
             GameObject prototype = GameObject.Find(prototypeName);
-            RenderMesh prototypeMesh = prototype.GetComponent<RenderMeshComponent>().Value;
+            RenderMesh prototypeMesh = prototype.GetComponent<RenderMeshProxy>().Value;
 
             // Destroy the prototype in the scene after data extracted
             Destroy(prototype);

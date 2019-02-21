@@ -11,8 +11,6 @@ GameObject:
   - component: {fileID: 1175494161629683045}
   - component: {fileID: 1175494161629683047}
   - component: {fileID: 1175494161629683044}
-  - component: {fileID: 1175494161629683066}
-  - component: {fileID: 1175494161629683067}
   m_Layer: 0
   m_Name: Ground
   m_TagString: Untagged
@@ -67,39 +65,3 @@ MonoBehaviour:
     layer: 0
     castShadows: 1
     receiveShadows: 1
---- !u!114 &1175494161629683066
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1175494161629683065}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_GeneratorAsset: {fileID: 0}
-  m_Script: {fileID: 11500000, guid: 0af0db853e732453799566a0e597993c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_SerializedData:
-    Value:
-      x: 0
-      y: 0
-      z: 0
---- !u!114 &1175494161629683067
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1175494161629683065}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_GeneratorAsset: {fileID: 0}
-  m_Script: {fileID: 11500000, guid: 1060dcfa4c8484da9a56580361de6f9f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  m_SerializedData:
-    Value:
-      x: 3
-      y: 1
-      z: 3
