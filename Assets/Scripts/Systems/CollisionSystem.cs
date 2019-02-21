@@ -40,8 +40,8 @@ namespace SimpleECS
             // Access to the EntityCommandBuffer to Destroy entity
             [ReadOnly] public EntityCommandBuffer CommandBuffer;
 
-            [ReadOnly] public NativeArray<Position> ScoreBoxPositions;
-            [ReadOnly] public NativeArray<ScoreBox> ScoreBoxes;
+            [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<Position> ScoreBoxPositions;
+            [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<ScoreBox> ScoreBoxes;
 
             public void Execute(ref Player player, [ReadOnly] ref Position position)
             {
@@ -78,13 +78,6 @@ namespace SimpleECS
 
             // Pass final handle to Barrier to ensure dependency completion
             Barrier.AddJobHandleForProducer(collisionJobHandle);
-
-            // Wait for job to be completed
-            collisionJobHandle.Complete();
-
-            // Dispose NativeArray
-            scoreBoxPosition.Dispose();
-            scoreBox.Dispose();
 
             return collisionJobHandle;
         }
