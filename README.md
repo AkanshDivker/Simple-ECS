@@ -98,7 +98,7 @@ ECS and the Job System perform very well together, giving performance by default
             public float Value;
         }
     
-        public class MoveSpeedComponent : ComponentDataProxy<MoveSpeed> { }
+        public class MoveSpeedProxy : ComponentDataProxy<MoveSpeed> { }
     }
 ```
 ### ECS
