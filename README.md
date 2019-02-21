@@ -11,6 +11,14 @@ Since ECS is still under development, I will keep this project updated as things
 - Implements the C# Job System
 - Networked code for ECS and C# Job System [TO-DO]
 
+### Changelog
+**Feb 20, 2019**
+- Updated project for Entities 0.0.12-preview.24
+- Updated project for Hybrid Renderer 0.0.1-preview.4
+- Removed Inject as it is deprecated
+- ComponentDataWrapper updated to ComponentDataProxy
+- Converted all Prefabs to Prototypes
+
 ## Getting Started
 
 You can get started by cloning the repository on your desktop. Since ECS is in preview, you will need to follow some prerequisite steps in order to get things running.
@@ -47,9 +55,11 @@ The `Unity.Burst` library is required in order to use the Burst Compiler for the
 
 Once you have downloaded the repository to your computer, you can open up the DemoScene located in the Scenes folder.
 
-### Prefabs
+### Prototypes
 
-The Prefabs folder contains both the prefabs for the environment objects, as well as prototypes for the PlayerBall and ScoreBox.
+The Prototypes folder contains empty prefab objects which only contain a MeshRenderProxy. They are placed into the scene as prototypes. The data is then extracted and the object is deleted.
+
+The Prototypes folder contains prototypes for the environment objects, Player, and ScoreBox.
 
 ![](https://i.imgur.com/rcVBIzm.png)
 
@@ -61,7 +71,7 @@ The Scripts folder is divided into two sub-folders. One for Components, which ar
 
 ### Hierarchy
 
-The project hierarchy contains some simple standard components. A directional light, canvas, and the camera being the most standard. In addition, we have an empty game object that contains our `SystemManager` script. The PlayerBall and ScoreBox prefabs are added in as prototypes. They only contain a `RenderMesh` component.
+The project hierarchy contains some simple standard components. A directional light, canvas, and the camera being the most standard. In addition, we have an empty game object that contains our `SystemManager` script. The prototypes for the scene are added and placed under the empty Prototypes GameObject for organization.
 
 ![](https://i.imgur.com/qowOlft.png)
 
@@ -88,7 +98,7 @@ ECS and the Job System perform very well together, giving performance by default
             public float Value;
         }
     
-        public class MoveSpeedComponent : ComponentDataWrapper<MoveSpeed> { }
+        public class MoveSpeedComponent : ComponentDataProxy<MoveSpeed> { }
     }
 ```
 ### ECS
