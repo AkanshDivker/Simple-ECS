@@ -32,7 +32,7 @@ You can get started by cloning the repository on your desktop. Since ECS is in p
 
 ### Prerequisites
 
-I recommend using Unity 2018.3 or later for this project. You will also need the following packages, which can be added through the **Package Manager** window.
+This project requires Unity 2019.1 or later. You will also need the following packages, which can be added through the **Package Manager** window.
 
 ```
 Entities (com.unity.entities)
