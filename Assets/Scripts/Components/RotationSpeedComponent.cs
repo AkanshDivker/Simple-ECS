@@ -11,5 +11,4 @@ namespace SimpleECS
     {
         public float Value;
     }
-    public class RotationSpeedProxy : ComponentDataProxy<RotationSpeed> { }
 }

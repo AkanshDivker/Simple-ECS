@@ -1,9 +1,8 @@
-﻿using UnityEngine;
+﻿using Unity.Collections;
 using Unity.Entities;
-using Unity.Transforms;
 using Unity.Mathematics;
-using Unity.Collections;
-using Unity.Rendering;
+using Unity.Transforms;
+using UnityEngine;
 using UnityEngine.UI;
 
 
@@ -29,52 +28,34 @@ namespace SimpleECS
 
         #endregion
 
-        private EntityManager manager;
-
-        private EntityArchetype scoreBoxArchetype;
-        private EntityArchetype playerArchetype;
-        private EntityArchetype wallArchetype;
-        private EntityArchetype groundArchetype;
-
-        private RenderMesh scoreBoxMesh;
-        private RenderMesh playerMesh;
-        private RenderMesh wallMesh;
-        private RenderMesh groundMesh;
-
-        private Entity player;
+        // Set the GameObject prefabs to create entity prefabs
+        public GameObject WallPrefab;
+        public GameObject ScoreBoxPrefab;
+        public GameObject GroundPrefab;
+        public GameObject PlayerPrefab;
 
         private Vector3 origin;
         private Vector3 cameraOffset;
+
+        // Access to player entity to update score and camera position
+        private Entity PlayerEntity;
+
+        private EntityManager Manager;
 
         // One time fix to get camera position offset
         private bool getOffset = false;
 
         private void Start()
         {
-            // Find the entity manager, or create one if it does not already exist
-            manager = World.Active.GetOrCreateManager<EntityManager>();
-
+            Manager = World.Active.EntityManager;
             origin = new Vector3(0.0f, 0.5f, 0.0f);
 
-            // Create entity archetypes with their corresponding components and get their mesh
-            scoreBoxArchetype = manager.CreateArchetype(typeof(ScoreBox), typeof(Position), typeof(Rotation), typeof(RotationSpeed), typeof(Scale));
-            scoreBoxMesh = GetMeshFromPrototype("ScoreBoxProto");
-
-            playerArchetype = manager.CreateArchetype(typeof(Player), typeof(Position), typeof(Scale), typeof(MoveSpeed));
-            playerMesh = GetMeshFromPrototype("PlayerProto");
-
-            wallArchetype = manager.CreateArchetype(typeof(Position), typeof(Scale));
-            wallMesh = GetMeshFromPrototype("WallProto");
-
-            groundArchetype = manager.CreateArchetype(typeof(Position), typeof(Scale));
-            groundMesh = GetMeshFromPrototype("GroundProto");
-
-            // Create the remaining entities for the scene
+            // Create entity prefabs for the scene
             AddGround();
             AddWalls();
 
-            AddScoreBoxes();
             AddPlayer();
+            AddScoreBoxes();
         }
 
         private void Update()
@@ -86,7 +67,7 @@ namespace SimpleECS
         // Update the camera position to follow the player ball, with an added offset
         private void UpdateCameraPos()
         {
-            Vector3 playerPos = manager.GetComponentData<Position>(player).Value;
+            Vector3 playerPos = Manager.GetComponentData<Translation>(PlayerEntity).Value;
 
             if (!getOffset)
             {
@@ -100,20 +81,20 @@ namespace SimpleECS
         // Update the score text in the UI according to the player's score
         private void UpdateScore()
         {
-            int playerScore = manager.GetComponentData<Player>(player).Score;
+            int playerScore = Manager.GetComponentData<Player>(PlayerEntity).Score;
             scoreValue.text = playerScore.ToString();
         }
 
+        // Instantiate the ground for the scene
         private void AddGround()
         {
-            NativeArray<Entity> groundEntities = new NativeArray<Entity>(1, Allocator.Persistent);
-            manager.CreateEntity(groundArchetype, groundEntities);
+            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(GroundPrefab, World.Active);
+            var instance = Manager.Instantiate(prefab);
 
-            manager.SetComponentData(groundEntities[0], new Position { Value = new float3(0.0f, 0.0f, 0.0f) });
-            manager.SetComponentData(groundEntities[0], new Scale { Value = new float3(3.0f, 1.0f, 3.0f) });
-            manager.AddSharedComponentData(groundEntities[0], groundMesh);
+            Manager.SetComponentData(instance, new Translation { Value = new float3(0.0f, 0.0f, 0.0f) });
 
-            groundEntities.Dispose();
+            // Name the entity
+            Manager.SetName(instance, "Ground Entity");
         }
 
         // Instantiate the environment prefabs in the scene
@@ -121,26 +102,28 @@ namespace SimpleECS
         {
             // 4 Walls in Total
             NativeArray<Entity> wallEntities = new NativeArray<Entity>(4, Allocator.Persistent);
-            manager.CreateEntity(wallArchetype, wallEntities);
 
-            // Set the RenderMesh for all the walls
-            for (int i = 0; i < 4; i++)
-            {
-                manager.AddSharedComponentData(wallEntities[i], wallMesh);
-            }
+            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(WallPrefab, World.Active);
+            Manager.Instantiate(prefab, wallEntities);
 
             // Set component data for each wall
-            manager.SetComponentData(wallEntities[0], new Position { Value = new float3(-15.0f, 0.5f, 0.0f) });
-            manager.SetComponentData(wallEntities[0], new Scale { Value = new float3(1.0f, 1.0f, 31.0f) });
+            Manager.SetComponentData(wallEntities[0], new Translation { Value = new float3(-15.0f, 0.5f, 0.0f) });
+            Manager.AddComponentData(wallEntities[0], new NonUniformScale { Value = new float3(1.0f, 1.0f, 31.0f) });
 
-            manager.SetComponentData(wallEntities[1], new Position { Value = new float3(15.0f, 0.5f, 0.0f) });
-            manager.SetComponentData(wallEntities[1], new Scale { Value = new float3(1.0f, 1.0f, 31.0f) });
+            Manager.SetComponentData(wallEntities[1], new Translation { Value = new float3(15.0f, 0.5f, 0.0f) });
+            Manager.AddComponentData(wallEntities[1], new NonUniformScale { Value = new float3(1.0f, 1.0f, 31.0f) });
 
-            manager.SetComponentData(wallEntities[2], new Position { Value = new float3(0.0f, 0.5f, -15.0f) });
-            manager.SetComponentData(wallEntities[2], new Scale { Value = new float3(30.0f, 1.0f, 1.0f) });
+            Manager.SetComponentData(wallEntities[2], new Translation { Value = new float3(0.0f, 0.5f, -15.0f) });
+            Manager.AddComponentData(wallEntities[2], new NonUniformScale { Value = new float3(30.0f, 1.0f, 1.0f) });
 
-            manager.SetComponentData(wallEntities[3], new Position { Value = new float3(0.0f, 0.5f, 15.0f) });
-            manager.SetComponentData(wallEntities[3], new Scale { Value = new float3(30.0f, 1.0f, 1.0f) });
+            Manager.SetComponentData(wallEntities[3], new Translation { Value = new float3(0.0f, 0.5f, 15.0f) });
+            Manager.AddComponentData(wallEntities[3], new NonUniformScale { Value = new float3(30.0f, 1.0f, 1.0f) });
+
+            // Name each entity
+            for (int i = 0; i < wallEntities.Length; i++)
+            {
+                Manager.SetName(wallEntities[i], "Wall Entity " + i);
+            }
 
             wallEntities.Dispose();
         }
@@ -148,29 +131,39 @@ namespace SimpleECS
         // Create the Player entity and assign the corresponding components
         private void AddPlayer()
         {
-            player = manager.CreateEntity(playerArchetype);
+            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(PlayerPrefab, World.Active);
+            var instance = Manager.Instantiate(prefab);
 
-            manager.SetComponentData(player, new Player { Score = 0, entity = player });
-            manager.SetComponentData(player, new Position { Value = new float3(0.0f, 0.5f, 0.0f) });
-            manager.SetComponentData(player, new Scale { Value = new float3(1.0f, 1.0f, 1.0f) });
-            manager.SetComponentData(player, new MoveSpeed { Value = 15.0f });
-            manager.AddSharedComponentData(player, playerMesh);
+            Manager.AddComponentData(instance, new Player { Score = 0, entity = instance });
+            Manager.SetComponentData(instance, new Translation { Value = new float3(0.0f, 0.5f, 0.0f) });
+            Manager.AddComponentData(instance, new MoveSpeed { Value = 15.0f });
+
+            // Name the entity
+            Manager.SetName(instance, "Player Entity");
+
+            PlayerEntity = instance;
         }
 
         // Create the ScoreBox entities and assign the corresponding components
         private void AddScoreBoxes()
         {
             NativeArray<Entity> scoreBoxEntities = new NativeArray<Entity>(scoreBoxCount, Allocator.Temp);
-            manager.CreateEntity(scoreBoxArchetype, scoreBoxEntities);
+
+            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(ScoreBoxPrefab, World.Active);
+            Manager.Instantiate(prefab, scoreBoxEntities);
 
             for (int i = 0; i < scoreBoxCount; i++)
             {
-                manager.SetComponentData(scoreBoxEntities[i], new ScoreBox { entity = scoreBoxEntities[i] });
-                manager.SetComponentData(scoreBoxEntities[i], new Position { Value = GenerateBoxSpawn(circleRadius) });
-                manager.SetComponentData(scoreBoxEntities[i], new Scale { Value = new float3(1.0f, 1.0f, 1.0f) });
-                manager.SetComponentData(scoreBoxEntities[i], new Rotation { Value = new quaternion(0.0f, 0.0f, 0.0f, 1.0f) });
-                manager.SetComponentData(scoreBoxEntities[i], new RotationSpeed { Value = rotationSpeed });
-                manager.AddSharedComponentData(scoreBoxEntities[i], scoreBoxMesh);
+                Manager.AddComponentData(scoreBoxEntities[i], new ScoreBox { entity = scoreBoxEntities[i] });
+                Manager.SetComponentData(scoreBoxEntities[i], new Translation { Value = GenerateBoxSpawn(circleRadius) });
+                Manager.SetComponentData(scoreBoxEntities[i], new Rotation { Value = new quaternion(0.0f, 0.0f, 0.0f, 1.0f) });
+                Manager.AddComponentData(scoreBoxEntities[i], new RotationSpeed { Value = rotationSpeed });
+            }
+
+            // Name each entity
+            for (int i = 0; i < scoreBoxEntities.Length; i++)
+            {
+                Manager.SetName(scoreBoxEntities[i], "ScoreBox Entity " + i);
             }
 
             scoreBoxEntities.Dispose();
@@ -187,18 +180,6 @@ namespace SimpleECS
             spawnPos.z = origin.z + radius * math.cos(math.radians(angle));
 
             return spawnPos;
-        }
-
-        // Get the corresponding RenderMesh for a given prototype in the scene
-        private static RenderMesh GetMeshFromPrototype(string prototypeName)
-        {
-            GameObject prototype = GameObject.Find(prototypeName);
-            RenderMesh prototypeMesh = prototype.GetComponent<RenderMeshProxy>().Value;
-
-            // Destroy the prototype in the scene after data extracted
-            Destroy(prototype);
-
-            return prototypeMesh;
         }
     }
 }

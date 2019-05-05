@@ -13,5 +13,4 @@ namespace SimpleECS
         public int Score;
         public Entity entity;
     }
-    public class PlayerProxy : ComponentDataProxy<Player> { }
 }

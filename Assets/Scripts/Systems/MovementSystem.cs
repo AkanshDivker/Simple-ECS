@@ -15,13 +15,13 @@ namespace SimpleECS
     {
         [BurstCompile]
         [RequireComponentTag(typeof(Player))]
-        struct MovementJob : IJobProcessComponentData<Position, MoveSpeed>
+        struct MovementJob : IJobForEach<Translation, MoveSpeed>
         {
             public float deltaTime;
             public float horizontalInput;
             public float verticalInput;
 
-            public void Execute(ref Position position, [ReadOnly] ref MoveSpeed moveSpeed)
+            public void Execute(ref Translation position, [ReadOnly] ref MoveSpeed moveSpeed)
             {
                 position.Value += new float3(horizontalInput, 0.0f, verticalInput) * moveSpeed.Value * deltaTime;
             }

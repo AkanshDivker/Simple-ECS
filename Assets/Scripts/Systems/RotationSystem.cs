@@ -15,7 +15,7 @@ namespace SimpleECS
     {
         [BurstCompile]
         [RequireComponentTag(typeof(ScoreBox))]
-        struct RotationJob : IJobProcessComponentData<Rotation, RotationSpeed>
+        struct RotationJob : IJobForEach<Rotation, RotationSpeed>
         {
             public float deltaTime;
 
