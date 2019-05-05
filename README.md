@@ -18,6 +18,7 @@ Since ECS is still under development, I will keep this project updated as things
 - Implemented new ConvertToEntity workflow for converting GameObjects to Entities
 - Added Entity names
 - Updated EntityCommandBufferSystem creation and access
+
 **Feb 20, 2019**
 - Updated project for Entities 0.0.12-preview.24
 - Updated project for Hybrid Renderer 0.0.1-preview.4
