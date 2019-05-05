@@ -9,9 +9,15 @@ Since ECS is still under development, I will keep this project updated as things
 **Functionality**
 - Implements the Entity Component System
 - Implements the C# Job System
-- Networked code for ECS and C# Job System [TO-DO]
+- Networked code for ECS and C# Job System using new [Unity Multiplayer](https://github.com/Unity-Technologies/multiplayer) [TO-DO]
 
 ### Changelog
+**May 5, 2019**
+- Updated project for Entities 0.0.12-preview.31
+- Updated project for Hybrid Renderer 0.0.1-preview.11
+- Implemented new ConvertToEntity workflow for converting GameObjects to Entities
+- Added Entity names
+- Updated EntityCommandBufferSystem creation and access
 **Feb 20, 2019**
 - Updated project for Entities 0.0.12-preview.24
 - Updated project for Hybrid Renderer 0.0.1-preview.4
@@ -30,6 +36,7 @@ I recommend using Unity 2018.3 or later for this project. You will also need the
 ```
 Entities (com.unity.entities)
 Hybrid Renderer (com.unity.rendering.hybrid)
+Mathematice (com.unity.mathematics)
 ```
 
 ### Scripting
@@ -55,13 +62,13 @@ The `Unity.Burst` library is required in order to use the Burst Compiler for the
 
 Once you have downloaded the repository to your computer, you can open up the DemoScene located in the Scenes folder.
 
-### Prototypes
+### Prefabs
 
-The Prototypes folder contains empty prefab objects which only contain a MeshRenderProxy. They are placed into the scene as prototypes. The data is then extracted and the object is deleted.
+The Prefabs folder contains game objects with Mesh Render and Mesh Filter scripts added to them. These game objects are used to be converted into entity prefabs by using the ConvertToEntity workflow.
 
-The Prototypes folder contains prototypes for the environment objects, Player, and ScoreBox.
+The Prefabs folder contains prefabs for the environment objects, Player, and ScoreBox.
 
-![](https://i.imgur.com/vCn6ddj.png)
+![](https://i.imgur.com/kEGMLhf.png)
 
 ### Scripts
 
@@ -71,9 +78,9 @@ The Scripts folder is divided into two sub-folders. One for Components, which ar
 
 ### Hierarchy
 
-The project hierarchy contains some simple standard components. A directional light, canvas, and the camera being the most standard. In addition, we have an empty game object that contains our `SystemManager` script. The prototypes for the scene are added and placed under the empty Prototypes GameObject for organization.
+The project hierarchy contains some simple and standard components. A directional light, canvas, and the camera being the most standard. For everything else, entity prefabs are instantiated directly into the scene.
 
-![](https://i.imgur.com/OqXJCNQ.png)
+![](https://i.imgur.com/RXKxHRS.png)
 
 ## Entity Component System (ECS)
 
@@ -94,11 +101,9 @@ ECS and the Job System perform very well together, giving performance by default
         [Serializable]
         public struct MoveSpeed : IComponentData
         {
-			// Only contains data
+	    // Only contains data
             public float Value;
         }
-    
-        public class MoveSpeedProxy : ComponentDataProxy<MoveSpeed> { }
     }
 ```
 ### ECS
@@ -117,28 +122,28 @@ Systems contain all of the functionality. They process entities based on a filte
         {
             [BurstCompile]
             [RequireComponentTag(typeof(ScoreBox))]
-    		// Filter for entities with the Rotation and RotationSpeed components, also require them to have a ScoreBox component (but we don't need this data to be processed)
-            struct RotationJob : IJobProcessComponentData<Rotation, RotationSpeed>
+	    // Filter for entities with the Rotation and RotationSpeed components, also require them to have a ScoreBox component (but we don't need this data to be processed)
+            struct RotationJob : IJobForEach<Rotation, RotationSpeed>
             {
                 public float deltaTime;
     
-    			// Process the data for the given entity. [ReadOnly] value used for RotationSpeed as it will not be modified.
+    		// Process the data for the given entity. ReadOnly value used for RotationSpeed as it will not be modified.
                 public void Execute(ref Rotation rotation, [ReadOnly] ref RotationSpeed rotationSpeed)
                 {
                     rotation.Value = math.mul(math.normalize(rotation.Value), quaternion.AxisAngle(math.up(), rotationSpeed.Value * deltaTime));
                 }
             }
     
-    		// JobHandle for our RotationJob
+    	    // JobHandle for our RotationJob
             protected override JobHandle OnUpdate(JobHandle inputDeps)
             {
                 RotationJob rotationJob = new RotationJob
                 {
-    				// Provide deltaTime to the job execution
+    		    // Provide deltaTime to the job execution
                     deltaTime = Time.deltaTime,
                 };
     
-    			// Schedule the job to run and return the JobHandle
+    		// Schedule the job to run and return the JobHandle
                 return rotationJob.Schedule(this, inputDeps);
             }
         }
