@@ -37,7 +37,7 @@ This project requires Unity 2019.1 or later. You will also need the following pa
 ```
 Entities (com.unity.entities)
 Hybrid Renderer (com.unity.rendering.hybrid)
-Mathematice (com.unity.mathematics)
+Mathematics (com.unity.mathematics)
 ```
 
 ### Scripting
