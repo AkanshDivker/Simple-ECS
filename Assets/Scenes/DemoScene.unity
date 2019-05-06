@@ -676,7 +676,7 @@ MonoBehaviour:
   fpsValue: {fileID: 746390447}
   mainCamera: {fileID: 963194225}
   scoreBoxCount: 25
-  circleRadius: 5
+  circleRadius: 6
   rotationSpeed: 3
   WallPrefab: {fileID: 7614789541233994662, guid: c7a396a17840e6540a842c191bf67de0,
     type: 3}
