@@ -2,6 +2,7 @@
   "dependencies": {
     "com.unity.ads": "2.0.8",
     "com.unity.analytics": "3.3.2",
+    "com.unity.burst": "1.0.0",
     "com.unity.collab-proxy": "1.2.16",
     "com.unity.entities": "0.0.12-preview.31",
     "com.unity.mathematics": "1.0.1",

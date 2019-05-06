@@ -62,17 +62,15 @@ namespace SimpleECS
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            NativeArray<Translation> scoreBoxPosition = ScoreBoxGroup.ToComponentDataArray<Translation>(Allocator.TempJob);
-            NativeArray<ScoreBox> scoreBox = ScoreBoxGroup.ToComponentDataArray<ScoreBox>(Allocator.TempJob);
+            NativeArray<ScoreBox> scoreBox = ScoreBoxGroup.ToComponentDataArray<ScoreBox>(Allocator.TempJob, out var scoreBoxHandle);
+            NativeArray<Translation> scoreBoxPosition = ScoreBoxGroup.ToComponentDataArray<Translation>(Allocator.TempJob, out var scoreBoxPositionHandle);
 
-            CollisionJob collisionJob = new CollisionJob
+            var collisionJobHandle = new CollisionJob
             {
                 ScoreBoxPositions = scoreBoxPosition,
                 ScoreBoxes = scoreBox,
                 CommandBuffer = m_EntityCommandBufferSystem.CreateCommandBuffer(),
-            };
-
-            JobHandle collisionJobHandle = collisionJob.Schedule(this, inputDeps);
+            }.Schedule(this, JobHandle.CombineDependencies(inputDeps, scoreBoxHandle, scoreBoxPositionHandle));
 
             // Pass final handle to barrier system to ensure dependency completion
             // Tell the barrier system which job needs to be completed before the commands can be played back
