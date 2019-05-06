@@ -11,6 +11,5 @@ namespace SimpleECS
     public struct Player : IComponentData
     {
         public int Score;
-        public Entity entity;
     }
 }

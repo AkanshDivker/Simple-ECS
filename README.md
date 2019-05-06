@@ -12,6 +12,13 @@ Since ECS is still under development, I will keep this project updated as things
 - Networked code for ECS and C# Job System using new [Unity Multiplayer](https://github.com/Unity-Technologies/multiplayer) [TO-DO]
 
 ### Changelog
+**May 6, 2019**
+- Performance updates
+- Added FPS display
+- CollisionSystem now uses chunk iteration
+- Updated score collection and base score
+- Added multiple materials for ScoreBoxes based on assigned score value
+
 **May 5, 2019**
 - Updated project for Entities 0.0.12-preview.31
 - Updated project for Hybrid Renderer 0.0.1-preview.11

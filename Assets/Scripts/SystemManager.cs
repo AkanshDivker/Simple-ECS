@@ -3,6 +3,7 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
+using Unity.Rendering;
 using UnityEngine.UI;
 
 
@@ -17,13 +18,14 @@ namespace SimpleECS
 
         [Header("UI Objects")]
         public Text scoreValue;
+        public Text fpsValue;
 
         [Header("Object Prefabs")]
         public GameObject mainCamera;
 
         [Header("Settings")]
         public int scoreBoxCount = 20;
-        public float circleRadius = 5.0f;
+        public float circleRadius = 8.0f;
         public float rotationSpeed = 50.0f;
 
         #endregion
@@ -33,6 +35,10 @@ namespace SimpleECS
         public GameObject ScoreBoxPrefab;
         public GameObject GroundPrefab;
         public GameObject PlayerPrefab;
+
+        public Material RedMaterial;
+        public Material TealMaterial;
+        public Material PurpleMaterial;
 
         private Vector3 origin;
         private Vector3 cameraOffset;
@@ -44,6 +50,7 @@ namespace SimpleECS
 
         // One time fix to get camera position offset
         private bool getOffset = false;
+        private float DeltaTime = 0.0f;
 
         private void Start()
         {
@@ -62,6 +69,8 @@ namespace SimpleECS
         {
             UpdateCameraPos();
             UpdateScore();
+
+            UpdateFPS();
         }
 
         // Update the camera position to follow the player ball, with an added offset
@@ -83,6 +92,18 @@ namespace SimpleECS
         {
             int playerScore = Manager.GetComponentData<Player>(PlayerEntity).Score;
             scoreValue.text = playerScore.ToString();
+        }
+
+        // Simple FPS display from Unity sample page
+        private void UpdateFPS()
+        {
+            DeltaTime += (Time.unscaledDeltaTime - DeltaTime) * 0.1f;
+
+            float msec = DeltaTime * 1000.0f;
+            float fps = 1.0f / DeltaTime;
+            string text = string.Format("{0:0.0} ms ({1:0.} fps)", msec, fps);
+
+            fpsValue.text = text;
         }
 
         // Instantiate the ground for the scene
@@ -134,8 +155,8 @@ namespace SimpleECS
             Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(PlayerPrefab, World.Active);
             var instance = Manager.Instantiate(prefab);
 
-            Manager.AddComponentData(instance, new Player { Score = 0, entity = instance });
-            Manager.SetComponentData(instance, new Translation { Value = new float3(0.0f, 0.5f, 0.0f) });
+            Manager.AddComponentData(instance, new Player { Score = 0 });
+            Manager.SetComponentData(instance, new Translation { Value = origin });
             Manager.AddComponentData(instance, new MoveSpeed { Value = 15.0f });
 
             // Name the entity
@@ -154,9 +175,14 @@ namespace SimpleECS
 
             for (int i = 0; i < scoreBoxCount; i++)
             {
-                Manager.AddComponentData(scoreBoxEntities[i], new ScoreBox { entity = scoreBoxEntities[i] });
+                // Randomly generate a score value for each ScoreBox
+                int score = UnityEngine.Random.Range(1, 4);
+
+                // Assign a specific colour for each box based on it's score value
+                Manager.SetSharedComponentData(scoreBoxEntities[i], GenerateScoreBoxMesh(scoreBoxEntities[i], score));
+
+                Manager.AddComponentData(scoreBoxEntities[i], new ScoreBox { ScoreValue = score });
                 Manager.SetComponentData(scoreBoxEntities[i], new Translation { Value = GenerateBoxSpawn(circleRadius) });
-                Manager.SetComponentData(scoreBoxEntities[i], new Rotation { Value = new quaternion(0.0f, 0.0f, 0.0f, 1.0f) });
                 Manager.AddComponentData(scoreBoxEntities[i], new RotationSpeed { Value = rotationSpeed });
             }
 
@@ -167,6 +193,29 @@ namespace SimpleECS
             }
 
             scoreBoxEntities.Dispose();
+        }
+
+        // Update the ScoreBox mesh with new materials based on its score value
+        private RenderMesh GenerateScoreBoxMesh(Entity entity, int score)
+        {
+            var mesh = Manager.GetSharedComponentData<RenderMesh>(entity);
+
+            switch (score)
+            {
+                case 1:
+                    mesh.material = TealMaterial;
+                    break;
+                case 2:
+                    mesh.material = RedMaterial;
+                    break;
+                case 3:
+                    mesh.material = PurpleMaterial;
+                    break;
+                default:
+                    break;
+            }
+
+            return mesh;
         }
 
         // Generate a random spawn point on a circle

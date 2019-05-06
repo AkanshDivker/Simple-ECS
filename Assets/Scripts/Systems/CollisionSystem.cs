@@ -27,7 +27,7 @@ namespace SimpleECS
             // Query for ScoreBoxes with following components
             EntityQueryDesc scoreBoxQuery = new EntityQueryDesc
             {
-                All = new ComponentType[] { typeof(ScoreBox), typeof(Translation) }
+                All = new ComponentType[] { typeof(ScoreBox), typeof(Translation) },
             };
 
             // Get the ComponentGroup
@@ -35,26 +35,42 @@ namespace SimpleECS
         }
 
         [BurstCompile]
-        struct CollisionJob : IJobForEach<Player, Translation>
+        struct CollisionJob : IJobForEachWithEntity<Player, Translation>
         {
             // Access to the EntityCommandBuffer to Destroy entity
-            [ReadOnly] public EntityCommandBuffer CommandBuffer;
+            [ReadOnly] public EntityCommandBuffer.Concurrent CommandBuffer;
 
-            [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<Translation> ScoreBoxPositions;
-            [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<ScoreBox> ScoreBoxes;
+            // When dealing with more than one component, better to iterate through chunks
+            [ReadOnly] public ArchetypeChunkComponentType<Translation> TranslationType;
+            [ReadOnly] public ArchetypeChunkComponentType<ScoreBox> ScoreBoxType;
 
-            public void Execute(ref Player player, [ReadOnly] ref Translation position)
+            [ReadOnly] public ArchetypeChunkEntityType ScoreBoxEntity;
+
+            [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<ArchetypeChunk> Chunks;
+
+            public void Execute(Entity entity, int index, ref Player player, [ReadOnly] ref Translation position)
             {
-                for (int i = 0; i < ScoreBoxPositions.Length; i++)
+                for (int i = 0; i < Chunks.Length; i++)
                 {
-                    // Calculate the distance between the ScoreBox and Player
-                    float dist = math.distance(position.Value, ScoreBoxPositions[i].Value);
+                    var chunk = Chunks[i];
 
-                    // If close enough for collision, add to the score and destroy the entity
-                    if (dist < 2.0f)
+                    var translations = chunk.GetNativeArray(TranslationType);
+                    var scoreBoxes = chunk.GetNativeArray(ScoreBoxType);
+                    var scoreBoxEntities = chunk.GetNativeArray(ScoreBoxEntity);
+
+                    for (int j = 0; j < scoreBoxes.Length; j++)
                     {
-                        player.Score += 1;
-                        CommandBuffer.DestroyEntity(ScoreBoxes[i].entity);
+                        // Calculate the distance between the ScoreBox and Player
+                        // Use squared distance value to increase performance (saves call to sqrt())
+                        float dist = math.distancesq(position.Value, translations[j].Value);
+
+                        // If close enough for collision, add to the score and destroy the entity
+                        // Check the squared value of distance threshold (2^2 = 4)
+                        if (dist < 4.0f)
+                        {
+                            player.Score += scoreBoxes[j].ScoreValue;
+                            CommandBuffer.DestroyEntity(index, scoreBoxEntities[j]);
+                        }
                     }
                 }
             }
@@ -62,15 +78,20 @@ namespace SimpleECS
 
         protected override JobHandle OnUpdate(JobHandle inputDeps)
         {
-            NativeArray<ScoreBox> scoreBox = ScoreBoxGroup.ToComponentDataArray<ScoreBox>(Allocator.TempJob, out var scoreBoxHandle);
-            NativeArray<Translation> scoreBoxPosition = ScoreBoxGroup.ToComponentDataArray<Translation>(Allocator.TempJob, out var scoreBoxPositionHandle);
+            var translationType = GetArchetypeChunkComponentType<Translation>(true);
+            var scoreBoxType = GetArchetypeChunkComponentType<ScoreBox>(true);
+            var scoreBoxEntity = GetArchetypeChunkEntityType();
+            var chunks = ScoreBoxGroup.CreateArchetypeChunkArray(Allocator.TempJob, out var handle);
 
+            // Create the job and add dependency
             var collisionJobHandle = new CollisionJob
             {
-                ScoreBoxPositions = scoreBoxPosition,
-                ScoreBoxes = scoreBox,
-                CommandBuffer = m_EntityCommandBufferSystem.CreateCommandBuffer(),
-            }.Schedule(this, JobHandle.CombineDependencies(inputDeps, scoreBoxHandle, scoreBoxPositionHandle));
+                CommandBuffer = m_EntityCommandBufferSystem.CreateCommandBuffer().ToConcurrent(),
+                TranslationType = translationType,
+                ScoreBoxType = scoreBoxType,
+                ScoreBoxEntity = scoreBoxEntity,
+                Chunks = chunks,
+            }.Schedule(this, JobHandle.CombineDependencies(inputDeps, handle));
 
             // Pass final handle to barrier system to ensure dependency completion
             // Tell the barrier system which job needs to be completed before the commands can be played back

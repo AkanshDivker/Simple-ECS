@@ -9,6 +9,6 @@ namespace SimpleECS
     [Serializable]
     public struct ScoreBox : IComponentData
     {
-        public Entity entity;
+        public int ScoreValue;
     }
 }
