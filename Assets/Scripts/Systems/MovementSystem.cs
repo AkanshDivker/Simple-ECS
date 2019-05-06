@@ -17,13 +17,13 @@ namespace SimpleECS
         [RequireComponentTag(typeof(Player))]
         struct MovementJob : IJobForEach<Translation, MoveSpeed>
         {
-            public float deltaTime;
-            public float horizontalInput;
-            public float verticalInput;
+            public float DeltaTime;
+            public float HorizontalInput;
+            public float VerticalInput;
 
             public void Execute(ref Translation position, [ReadOnly] ref MoveSpeed moveSpeed)
             {
-                position.Value += new float3(horizontalInput, 0.0f, verticalInput) * moveSpeed.Value * deltaTime;
+                position.Value += new float3(HorizontalInput, 0.0f, VerticalInput) * moveSpeed.Value * DeltaTime;
             }
         }
 
@@ -31,9 +31,9 @@ namespace SimpleECS
         {
             MovementJob movementJob = new MovementJob
             {
-                deltaTime = Time.deltaTime,
-                horizontalInput = Input.GetAxis("Horizontal"),
-                verticalInput = Input.GetAxis("Vertical"),
+                DeltaTime = Time.deltaTime,
+                HorizontalInput = Input.GetAxis("Horizontal"),
+                VerticalInput = Input.GetAxis("Vertical"),
             };
 
             return movementJob.Schedule(this, inputDeps);

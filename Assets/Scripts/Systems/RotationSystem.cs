@@ -17,11 +17,11 @@ namespace SimpleECS
         [RequireComponentTag(typeof(ScoreBox))]
         struct RotationJob : IJobForEach<Rotation, RotationSpeed>
         {
-            public float deltaTime;
+            public float DeltaTime;
 
             public void Execute(ref Rotation rotation, [ReadOnly] ref RotationSpeed rotationSpeed)
             {
-                rotation.Value = math.mul(math.normalize(rotation.Value), quaternion.AxisAngle(math.up(), rotationSpeed.Value * deltaTime));
+                rotation.Value = math.mul(math.normalize(rotation.Value), quaternion.AxisAngle(math.up(), rotationSpeed.Value * DeltaTime));
             }
         }
 
@@ -29,7 +29,7 @@ namespace SimpleECS
         {
             RotationJob rotationJob = new RotationJob
             {
-                deltaTime = Time.deltaTime,
+                DeltaTime = Time.deltaTime,
             };
 
             return rotationJob.Schedule(this, inputDeps);
