@@ -29,7 +29,7 @@ namespace SimpleECS
         {
             RotationJob rotationJob = new RotationJob
             {
-                DeltaTime = Time.deltaTime,
+                DeltaTime = Time.DeltaTime,
             };
 
             return rotationJob.Schedule(this, inputDeps);

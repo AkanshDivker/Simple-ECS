@@ -38,7 +38,7 @@ namespace SimpleECS
         struct CollisionJob : IJobForEachWithEntity<Player, Translation>
         {
             // Access to the EntityCommandBuffer to Destroy entity
-            [ReadOnly] public EntityCommandBuffer.Concurrent CommandBuffer;
+            [WriteOnly] public EntityCommandBuffer.Concurrent CommandBuffer;
 
             // When dealing with more than one component, better to iterate through chunks
             [ReadOnly] public ArchetypeChunkComponentType<Translation> TranslationType;
@@ -81,7 +81,7 @@ namespace SimpleECS
             var translationType = GetArchetypeChunkComponentType<Translation>(true);
             var scoreBoxType = GetArchetypeChunkComponentType<ScoreBox>(true);
             var scoreBoxEntity = GetArchetypeChunkEntityType();
-            var chunks = ScoreBoxGroup.CreateArchetypeChunkArray(Allocator.TempJob, out var handle);
+            var chunks = ScoreBoxGroup.CreateArchetypeChunkArrayAsync(Allocator.TempJob, out var handle);
 
             // Create the job and add dependency
             var collisionJobHandle = new CollisionJob

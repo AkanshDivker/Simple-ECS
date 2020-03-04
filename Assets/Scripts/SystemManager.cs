@@ -52,10 +52,16 @@ namespace SimpleECS
         private bool getOffset = false;
         private float DeltaTime = 0.0f;
 
+        private GameObjectConversionSettings settings;
+
         private void Start()
         {
-            Manager = World.Active.EntityManager;
+            Manager = World.DefaultGameObjectInjectionWorld.EntityManager;
             origin = new Vector3(0.0f, 0.5f, 0.0f);
+
+            var tempBlobStore = new BlobAssetStore();
+            settings = GameObjectConversionSettings.FromWorld(World.DefaultGameObjectInjectionWorld, tempBlobStore);
+            tempBlobStore.Dispose();
 
             // Create entity prefabs for the scene
             AddGround();
@@ -109,7 +115,7 @@ namespace SimpleECS
         // Instantiate the ground for the scene
         private void AddGround()
         {
-            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(GroundPrefab, World.Active);
+            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(GroundPrefab, settings);
             var instance = Manager.Instantiate(prefab);
 
             Manager.SetComponentData(instance, new Translation { Value = new float3(0.0f, 0.0f, 0.0f) });
@@ -124,7 +130,7 @@ namespace SimpleECS
             // 4 Walls in Total
             NativeArray<Entity> wallEntities = new NativeArray<Entity>(4, Allocator.Persistent);
 
-            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(WallPrefab, World.Active);
+            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(WallPrefab, settings);
             Manager.Instantiate(prefab, wallEntities);
 
             // Set component data for each wall
@@ -152,7 +158,7 @@ namespace SimpleECS
         // Create the Player entity and assign the corresponding components
         private void AddPlayer()
         {
-            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(PlayerPrefab, World.Active);
+            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(PlayerPrefab, settings);
             var instance = Manager.Instantiate(prefab);
 
             Manager.AddComponentData(instance, new Player { Score = 0 });
@@ -170,7 +176,7 @@ namespace SimpleECS
         {
             NativeArray<Entity> scoreBoxEntities = new NativeArray<Entity>(scoreBoxCount, Allocator.Temp);
 
-            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(ScoreBoxPrefab, World.Active);
+            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(ScoreBoxPrefab, settings);
             Manager.Instantiate(prefab, scoreBoxEntities);
 
             for (int i = 0; i < scoreBoxCount; i++)

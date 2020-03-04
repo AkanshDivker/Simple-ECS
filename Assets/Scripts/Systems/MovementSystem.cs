@@ -31,7 +31,7 @@ namespace SimpleECS
         {
             MovementJob movementJob = new MovementJob
             {
-                DeltaTime = Time.deltaTime,
+                DeltaTime = Time.DeltaTime,
                 HorizontalInput = Input.GetAxis("Horizontal"),
                 VerticalInput = Input.GetAxis("Vertical"),
             };
