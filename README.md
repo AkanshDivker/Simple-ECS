@@ -12,6 +12,10 @@ Since ECS is still under development, I will keep this project updated as things
 - Networked code for ECS and C# Job System using new [Unity Multiplayer](https://github.com/Unity-Technologies/multiplayer) [TO-DO]
 
 ### Changelog
+**March 3, 2020**
+- Updated project for Entities preview.19 - 0.7.0
+- Updated project for Hybrid Renderer preview.15 - 0.3.5
+
 **September 20, 2019**
 - Updated project for Entities preview-0.1.1
 - Updated project for Hybrid Renderer preview-0.1.1
@@ -44,7 +48,7 @@ You can get started by cloning the repository on your desktop. Since ECS is in p
 
 ### Prerequisites
 
-This project requires Unity 2019.2 or later. You will also need the following packages, which can be added through the **Package Manager** window.
+This project requires Unity 2019.3 or later. You will also need the following packages, which can be added through the **Package Manager** window.
 
 ```
 Entities (com.unity.entities)
