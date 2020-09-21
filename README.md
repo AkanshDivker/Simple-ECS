@@ -1,6 +1,6 @@
 # Simple ECS
 
-This is a simple project that utilizes the core features of the new Entity Component System (ECS) that is currently in preview for Unity. In the project you move a player controlled ball around to collect score boxes. Everything is processed using ECS and the C# Job System.
+This is a simple project that utilizes the core features of the new Entity Component System (ECS) that is currently in preview for Unity. In the project you move a player controlled ball around to collect score boxes. Everything is processed using DOTS and the C# Job System.
 
 Since ECS is still under development, I will keep this project updated as things change and possibly become deprecated, as well as add new functionality.
 
@@ -9,38 +9,18 @@ Since ECS is still under development, I will keep this project updated as things
 **Functionality**
 - Implements the Entity Component System
 - Implements the C# Job System
-- Networked code for ECS and C# Job System using new [Unity Multiplayer](https://github.com/Unity-Technologies/multiplayer) [TO-DO]
+- Implements Unity Physics Collisions and Movement with C# Job System
 
 ### Changelog
-**March 3, 2020**
-- Updated project for Entities preview.19 - 0.7.0
-- Updated project for Hybrid Renderer preview.15 - 0.3.5
 
-**September 20, 2019**
-- Updated project for Entities preview-0.1.1
-- Updated project for Hybrid Renderer preview-0.1.1
-- Updated project for Mathematics 1.1.0
+**September 21, 2020**
+- Updated project for Entities 0.14.0-preview.19
+- Updated project for Hybrid Renderer 0.8.0-preview.19
+- Added Unity Physics 0.5.0-preview.1
+- Updated DOTS workflow and style to match current standards and practices
+- Changed Movement and Collision systems to use Unity Physics instead
 
-**May 6, 2019**
-- Performance updates
-- Added FPS display
-- CollisionSystem now uses chunk iteration
-- Updated score collection and base score
-- Added multiple materials for ScoreBoxes based on assigned score value
-
-**May 5, 2019**
-- Updated project for Entities 0.0.12-preview.31
-- Updated project for Hybrid Renderer 0.0.1-preview.11
-- Implemented new ConvertToEntity workflow for converting GameObjects to Entities
-- Added Entity names
-- Updated EntityCommandBufferSystem creation and access
-
-**Feb 20, 2019**
-- Updated project for Entities 0.0.12-preview.24
-- Updated project for Hybrid Renderer 0.0.1-preview.4
-- Removed Inject as it is deprecated
-- ComponentDataWrapper updated to ComponentDataProxy
-- Converted all Prefabs to Prototypes
+To view a log of all the previous changes DOTS and this project have gone through, please view the [CHANGELOG.md](CHANGELOG.md) file for details.
 
 ## Getting Started
 
@@ -48,32 +28,14 @@ You can get started by cloning the repository on your desktop. Since ECS is in p
 
 ### Prerequisites
 
-This project requires Unity 2019.3 or later. You will also need the following packages, which can be added through the **Package Manager** window.
+This project requires Unity 2020.1 or later. You will also need the following packages, which can be added through the **Package Manager** window.
 
 ```
 Entities (com.unity.entities)
 Hybrid Renderer (com.unity.rendering.hybrid)
 Mathematics (com.unity.mathematics)
+Physics (com.unity.physics)
 ```
-
-### Scripting
-
-The main libraries that will be required for Entities, Job System, and Rendering are as follows.
-
-```c#
-using Unity.Entities;
-using Unity.Rendering;
-using Unity.Jobs;
-```
-
-In addition, the following libraries are also used in this project.
-
-```c#
-using Unity.Mathematics;
-using Unity.Burst;
-```
-
-The `Unity.Burst` library is required in order to use the Burst Compiler for the C# Job System.
 
 ## Opening the Project
 
@@ -95,9 +57,9 @@ The Scripts folder is divided into two sub-folders. One for Components, which ar
 
 ### Hierarchy
 
-The project hierarchy contains some simple and standard components. A directional light, canvas, and the camera being the most standard. For everything else, entity prefabs are instantiated directly into the scene.
+The project hierarchy contains some simple and standard components. Most of these objects are converted to entities automatically through the ConvertToEntity workflow.
 
-![](https://i.imgur.com/RXKxHRS.png)
+![](https://i.imgur.com/XZHDuki.png)
 
 ## Entity Component System (ECS)
 
@@ -110,18 +72,15 @@ With ECS, we can focus on processing only the data we need. There is no extra da
 ECS and the Job System perform very well together, giving performance by default in your code. ECS separates the data from the logic, by putting it into data containers called **Components**, and functionality into **Systems**.
 
 ```c#
-    namespace SimpleECS
+namespace SimpleECS
+{
+    // Component data for movement speed of an entity.
+    [GenerateAuthoringComponent]
+    public struct MoveSpeed : IComponentData
     {
-        /*
-         * Component data for movement speed of an entity.
-        */
-        [Serializable]
-        public struct MoveSpeed : IComponentData
-        {
-	    // Only contains data
-            public float Value;
-        }
+        public float Value;
     }
+}
 ```
 ### ECS
 
@@ -130,41 +89,27 @@ Using ECS requires a different way of thinking than the traditional object orien
 Systems contain all of the functionality. They process entities based on a filter, and provide performance by default.
 
 ```c#
-    namespace SimpleECS
+namespace SimpleECS
+{
+    // System to apply a changing rotation to Entities with a RotationSpeed component
+    [AlwaysSynchronizeSystem]
+    public class RotationSystem : SystemBase
     {
-        /*
-        * Utilizes C# Job System to process rotation for all ScoreBox entities.
-       */
-        public class RotationSystem : JobComponentSystem
+        protected override void OnUpdate()
         {
-            [BurstCompile]
-            [RequireComponentTag(typeof(ScoreBox))]
-	    // Filter for entities with the Rotation and RotationSpeed components, also require them to have a ScoreBox component (but we don't need this data to be processed)
-            struct RotationJob : IJobForEach<Rotation, RotationSpeed>
-            {
-                public float deltaTime;
-    
-    		// Process the data for the given entity. ReadOnly value used for RotationSpeed as it will not be modified.
-                public void Execute(ref Rotation rotation, [ReadOnly] ref RotationSpeed rotationSpeed)
+            float deltaTime = Time.DeltaTime;
+
+            Entities
+                .WithBurst()
+                .ForEach((ref Rotation rotation, in RotationSpeed rotationSpeed) =>
                 {
-                    rotation.Value = math.mul(math.normalize(rotation.Value), quaternion.AxisAngle(math.up(), rotationSpeed.Value * deltaTime));
-                }
-            }
-    
-    	    // JobHandle for our RotationJob
-            protected override JobHandle OnUpdate(JobHandle inputDeps)
-            {
-                RotationJob rotationJob = new RotationJob
-                {
-    		    // Provide deltaTime to the job execution
-                    deltaTime = Time.deltaTime,
-                };
-    
-    		// Schedule the job to run and return the JobHandle
-                return rotationJob.Schedule(this, inputDeps);
-            }
+                    rotation.Value = math.mul(rotation.Value, quaternion.RotateY(deltaTime * rotationSpeed.Value));
+
+                })
+                .ScheduleParallel();
         }
     }
+}
 ```
 
 ### Final Notes
@@ -179,4 +124,4 @@ The project is commented well and should provide detailed explanation on using E
 
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
