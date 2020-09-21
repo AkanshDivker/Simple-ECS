@@ -3,79 +3,78 @@ using Unity.Entities;
 using Unity.Mathematics;
 using Unity.Transforms;
 using UnityEngine;
-using Unity.Rendering;
 using UnityEngine.UI;
-
+using Unity.Jobs;
 
 namespace SimpleECS
 {
-    /*
-     * Bootstrap class used to acceess MonoBehaviour while still using ECS as the core of the project.
-    */
+    // Bootstrap class used to acceess MonoBehaviour while still using ECS as the core of the project.
     public class SystemManager : MonoBehaviour
     {
         #region Editor Settings
 
         [Header("UI Objects")]
-        public Text scoreValue;
-        public Text fpsValue;
+        public Text ScoreValue;
+        public Text FpsValue;
 
-        [Header("Object Prefabs")]
-        public GameObject mainCamera;
+        [Header("GameObjects")]
+        public GameObject MainCamera;
+        public GameObject ScoreBoxPrefab;
 
         [Header("Settings")]
-        public int scoreBoxCount = 20;
-        public float circleRadius = 8.0f;
-        public float rotationSpeed = 50.0f;
+        public int ScoreBoxCount = 20;
+        public float CircleRadius = 8.0f;
+        public float RotationSpeed = 10.0f;
 
         #endregion
 
-        // Set the GameObject prefabs to create entity prefabs
-        public GameObject WallPrefab;
-        public GameObject ScoreBoxPrefab;
-        public GameObject GroundPrefab;
-        public GameObject PlayerPrefab;
-
-        public Material RedMaterial;
-        public Material TealMaterial;
-        public Material PurpleMaterial;
-
-        private Vector3 origin;
-        private Vector3 cameraOffset;
-
-        // Access to player entity to update score and camera position
-        private Entity PlayerEntity;
-
-        private EntityManager Manager;
-
         // One time fix to get camera position offset
-        private bool getOffset = false;
-        private float DeltaTime = 0.0f;
+        Vector3 CameraOffset;
+        bool GetOffset = false;
+        float DeltaTime = 0.0f;
 
-        private GameObjectConversionSettings settings;
+        EntityManager Manager;
+        BeginInitializationEntityCommandBufferSystem CommandBufferSystem;
+
+        GameObjectConversionSettings Settings;
+        BlobAssetStore BlobStore;
+
+        EntityQuery PlayerQuery;
+        Entity PlayerEntity;
 
         private void Start()
         {
             Manager = World.DefaultGameObjectInjectionWorld.EntityManager;
-            origin = new Vector3(0.0f, 0.5f, 0.0f);
 
-            var tempBlobStore = new BlobAssetStore();
-            settings = GameObjectConversionSettings.FromWorld(World.DefaultGameObjectInjectionWorld, tempBlobStore);
-            tempBlobStore.Dispose();
+            BlobStore = new BlobAssetStore();
+            Settings = GameObjectConversionSettings.FromWorld(World.DefaultGameObjectInjectionWorld, BlobStore);
 
-            // Create entity prefabs for the scene
-            AddGround();
-            AddWalls();
+            CommandBufferSystem = World.DefaultGameObjectInjectionWorld.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
 
-            AddPlayer();
+            // Query for finding Player Entity
+            EntityQueryDesc playerQuery = new EntityQueryDesc
+            {
+                All = new ComponentType[] { typeof(Player) },
+            };
+
+            // Execute query and cache the Player Entity for use
+            PlayerQuery = Manager.CreateEntityQuery(playerQuery);
+            PlayerEntity = PlayerQuery.GetSingletonEntity();
+
+            // Create ScoreBoxes on level start
             AddScoreBoxes();
+        }
+
+        private void OnApplicationQuit()
+        {
+            BlobStore.Dispose();
         }
 
         private void Update()
         {
             UpdateCameraPos();
-            UpdateScore();
 
+            UpdateScore();
             UpdateFPS();
         }
 
@@ -84,20 +83,20 @@ namespace SimpleECS
         {
             Vector3 playerPos = Manager.GetComponentData<Translation>(PlayerEntity).Value;
 
-            if (!getOffset)
+            if (!GetOffset)
             {
-                cameraOffset = (mainCamera.transform.position - playerPos);
-                getOffset = true;
+                CameraOffset = MainCamera.transform.position - playerPos;
+                GetOffset = true;
             }
 
-            mainCamera.transform.position = playerPos + cameraOffset;
+            MainCamera.transform.position = playerPos + CameraOffset;
         }
 
         // Update the score text in the UI according to the player's score
         private void UpdateScore()
         {
             int playerScore = Manager.GetComponentData<Player>(PlayerEntity).Score;
-            scoreValue.text = playerScore.ToString();
+            ScoreValue.text = playerScore.ToString();
         }
 
         // Simple FPS display from Unity sample page
@@ -109,125 +108,61 @@ namespace SimpleECS
             float fps = 1.0f / DeltaTime;
             string text = string.Format("{0:0.0} ms ({1:0.} fps)", msec, fps);
 
-            fpsValue.text = text;
-        }
-
-        // Instantiate the ground for the scene
-        private void AddGround()
-        {
-            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(GroundPrefab, settings);
-            var instance = Manager.Instantiate(prefab);
-
-            Manager.SetComponentData(instance, new Translation { Value = new float3(0.0f, 0.0f, 0.0f) });
-
-            // Name the entity
-            Manager.SetName(instance, "Ground Entity");
-        }
-
-        // Instantiate the environment prefabs in the scene
-        private void AddWalls()
-        {
-            // 4 Walls in Total
-            NativeArray<Entity> wallEntities = new NativeArray<Entity>(4, Allocator.Persistent);
-
-            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(WallPrefab, settings);
-            Manager.Instantiate(prefab, wallEntities);
-
-            // Set component data for each wall
-            Manager.SetComponentData(wallEntities[0], new Translation { Value = new float3(-15.0f, 0.5f, 0.0f) });
-            Manager.AddComponentData(wallEntities[0], new NonUniformScale { Value = new float3(1.0f, 1.0f, 31.0f) });
-
-            Manager.SetComponentData(wallEntities[1], new Translation { Value = new float3(15.0f, 0.5f, 0.0f) });
-            Manager.AddComponentData(wallEntities[1], new NonUniformScale { Value = new float3(1.0f, 1.0f, 31.0f) });
-
-            Manager.SetComponentData(wallEntities[2], new Translation { Value = new float3(0.0f, 0.5f, -15.0f) });
-            Manager.AddComponentData(wallEntities[2], new NonUniformScale { Value = new float3(30.0f, 1.0f, 1.0f) });
-
-            Manager.SetComponentData(wallEntities[3], new Translation { Value = new float3(0.0f, 0.5f, 15.0f) });
-            Manager.AddComponentData(wallEntities[3], new NonUniformScale { Value = new float3(30.0f, 1.0f, 1.0f) });
-
-            // Name each entity
-            for (int i = 0; i < wallEntities.Length; i++)
-            {
-                Manager.SetName(wallEntities[i], "Wall Entity " + i);
-            }
-
-            wallEntities.Dispose();
-        }
-
-        // Create the Player entity and assign the corresponding components
-        private void AddPlayer()
-        {
-            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(PlayerPrefab, settings);
-            var instance = Manager.Instantiate(prefab);
-
-            Manager.AddComponentData(instance, new Player { Score = 0 });
-            Manager.SetComponentData(instance, new Translation { Value = origin });
-            Manager.AddComponentData(instance, new MoveSpeed { Value = 15.0f });
-
-            // Name the entity
-            Manager.SetName(instance, "Player Entity");
-
-            PlayerEntity = instance;
+            FpsValue.text = text;
         }
 
         // Create the ScoreBox entities and assign the corresponding components
         private void AddScoreBoxes()
         {
-            NativeArray<Entity> scoreBoxEntities = new NativeArray<Entity>(scoreBoxCount, Allocator.Temp);
+            // Create Entity Command Buffer for parallel writing
+            var commandBuffer = CommandBufferSystem.CreateCommandBuffer().AsParallelWriter();
+            NativeArray<Entity> scoreBoxEntities = new NativeArray<Entity>(ScoreBoxCount, Allocator.TempJob);
 
-            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(ScoreBoxPrefab, settings);
+            // Convert our ScoreBox GameObject Prefab into an Entity prefab
+            Entity prefab = GameObjectConversionUtility.ConvertGameObjectHierarchy(ScoreBoxPrefab, Settings);
             Manager.Instantiate(prefab, scoreBoxEntities);
 
-            for (int i = 0; i < scoreBoxCount; i++)
+            // Generate Random with default seed
+            var generator = new Unity.Mathematics.Random(0x6E624EB7u);
+
+            // Create the SpawnerJob to randomly spawn ScoreBox entities
+            var spawnerJob = new SpawnerJob()
             {
-                // Randomly generate a score value for each ScoreBox
-                int score = UnityEngine.Random.Range(1, 4);
+                CommandBuffer = commandBuffer,
+                ScoreBoxEntities = scoreBoxEntities,
+                Generator = generator,
+                CircleRadius = CircleRadius,
+            };
 
-                // Assign a specific colour for each box based on it's score value
-                Manager.SetSharedComponentData(scoreBoxEntities[i], GenerateScoreBoxMesh(scoreBoxEntities[i], score));
+            // Schedule the job to run in parallel
+            JobHandle spawnerJobHandle = new JobHandle();
+            JobHandle sheduleParralelJobHandle = spawnerJob.ScheduleParallel(scoreBoxEntities.Length, 64, spawnerJobHandle);
 
-                Manager.AddComponentData(scoreBoxEntities[i], new ScoreBox { ScoreValue = score });
-                Manager.SetComponentData(scoreBoxEntities[i], new Translation { Value = GenerateBoxSpawn(circleRadius) });
-                Manager.AddComponentData(scoreBoxEntities[i], new RotationSpeed { Value = rotationSpeed });
-            }
-
-            // Name each entity
-            for (int i = 0; i < scoreBoxEntities.Length; i++)
-            {
-                Manager.SetName(scoreBoxEntities[i], "ScoreBox Entity " + i);
-            }
+            // Ensure the job is completed
+            sheduleParralelJobHandle.Complete();
 
             scoreBoxEntities.Dispose();
         }
+    }
 
-        // Update the ScoreBox mesh with new materials based on its score value
-        private RenderMesh GenerateScoreBoxMesh(Entity entity, int score)
-        {
-            var mesh = Manager.GetSharedComponentData<RenderMesh>(entity);
-
-            switch (score)
-            {
-                case 1:
-                    mesh.material = TealMaterial;
-                    break;
-                case 2:
-                    mesh.material = RedMaterial;
-                    break;
-                case 3:
-                    mesh.material = PurpleMaterial;
-                    break;
-                default:
-                    break;
-            }
-
-            return mesh;
-        }
+    // Define the SpawnerJob to spawn ScoreBox entities
+    struct SpawnerJob : IJobFor
+    {
+        [WriteOnly]
+        public EntityCommandBuffer.ParallelWriter CommandBuffer;
+        [ReadOnly]
+        public NativeArray<Entity> ScoreBoxEntities;
+        [ReadOnly]
+        public Unity.Mathematics.Random Generator;
+        [ReadOnly]
+        public float CircleRadius;
 
         // Generate a random spawn point on a circle
         private float3 GenerateBoxSpawn(float radius)
         {
-            float angle = UnityEngine.Random.Range(0.0f, 1.0f) * 360.0f;
+            Vector3 origin = new Vector3(0.0f, 0.5f, 0.0f);
+
+            float angle = Generator.NextFloat(0.0f, 1.0f) * 360.0f;
             float3 spawnPos = float3.zero;
 
             spawnPos.x = origin.x + radius * math.sin(math.radians(angle));
@@ -235,6 +170,16 @@ namespace SimpleECS
             spawnPos.z = origin.z + radius * math.cos(math.radians(angle));
 
             return spawnPos;
+        }
+
+        public void Execute(int i)
+        {
+            // Randomly generate a score value for each ScoreBox
+            int score = Generator.NextInt(1, 3);
+
+            // Assign the points per ScoreBox and it's position on the spawn circle
+            CommandBuffer.AddComponent(i, ScoreBoxEntities[i], new ScoreBox { Points = score });
+            CommandBuffer.SetComponent(i, ScoreBoxEntities[i], new Translation { Value = GenerateBoxSpawn(CircleRadius) });
         }
     }
 }

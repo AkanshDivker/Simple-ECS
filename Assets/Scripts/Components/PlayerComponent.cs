@@ -1,13 +1,9 @@
 ﻿using Unity.Entities;
-using Unity.Mathematics;
-using System;
 
 namespace SimpleECS
 {
-    /*
-     * Component data for a Player entity.
-    */
-    [Serializable]
+    // Component data for a Player entity.
+    [GenerateAuthoringComponent]
     public struct Player : IComponentData
     {
         public int Score;

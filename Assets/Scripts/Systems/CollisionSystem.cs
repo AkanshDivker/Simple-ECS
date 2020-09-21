@@ -1,103 +1,97 @@
 ﻿using Unity.Entities;
-using Unity.Transforms;
 using Unity.Jobs;
-using Unity.Mathematics;
 using Unity.Collections;
+using Unity.Physics.Systems;
+using Unity.Physics;
 using Unity.Burst;
 
 namespace SimpleECS
 {
-    /*
-     * Utilizes C# Job System to process collisions between Player and ScoreBox entities.
-     * Creating and removing entities can only be done inside the main thread.
-     * This sytem uses an EntityCommandBuffer to handle tasks that can't be completed inside Jobs.
-    */
-    public class CollisionSystem : JobComponentSystem
+    // Utilizes C# Job System to process collisions between Player and ScoreBox entities.
+    // Creating and removing entities can only be done inside the main thread.
+    // This system uses an EntityCommandBuffer to handle tasks that can't be completed inside Jobs.
+    // Runs after physics system is done processing.
+    [UpdateAfter(typeof(EndFramePhysicsSystem))]
+    public class CollisionSystem : SystemBase
     {
-        // Define a ComponentGroup for ScoreBox entities
-        EntityQuery ScoreBoxGroup;
+        // Physics references
+        BuildPhysicsWorld BuildPhysicsWorldSystem;
+        StepPhysicsWorld StepPhysicsWorldSystem;
 
-        // BeginInitializationEntityCommandBufferSystem is used to create a command buffer that will be played back when the barreir system executes.
-        BeginInitializationEntityCommandBufferSystem m_EntityCommandBufferSystem;
+        // BeginInitializationEntityCommandBufferSystem is used to create a command buffer that will be played back when the barrier system executes.
+        BeginInitializationEntityCommandBufferSystem CommandBufferSystem;
 
         protected override void OnCreate()
         {
-            m_EntityCommandBufferSystem = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
-
-            // Query for ScoreBoxes with following components
-            EntityQueryDesc scoreBoxQuery = new EntityQueryDesc
-            {
-                All = new ComponentType[] { typeof(ScoreBox), typeof(Translation) },
-            };
-
-            // Get the ComponentGroup
-            ScoreBoxGroup = GetEntityQuery(scoreBoxQuery);
+            BuildPhysicsWorldSystem = World.GetOrCreateSystem<BuildPhysicsWorld>();
+            StepPhysicsWorldSystem = World.GetOrCreateSystem<StepPhysicsWorld>();
+            CommandBufferSystem = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
         }
 
+        // Job struct for handling collision response as trigger
         [BurstCompile]
-        struct CollisionJob : IJobForEachWithEntity<Player, Translation>
+        struct ScoreBoxCollisionEventJob : ITriggerEventsJob
         {
-            // Access to the EntityCommandBuffer to Destroy entity
-            [WriteOnly] public EntityCommandBuffer.Concurrent CommandBuffer;
+            [WriteOnly]
+            public EntityCommandBuffer CommandBuffer;
+            [ReadOnly]
+            public ComponentDataFromEntity<ScoreBox> ScoreBoxGroup;
+            public ComponentDataFromEntity<Player> PlayerGroup;
 
-            // When dealing with more than one component, better to iterate through chunks
-            [ReadOnly] public ArchetypeChunkComponentType<Translation> TranslationType;
-            [ReadOnly] public ArchetypeChunkComponentType<ScoreBox> ScoreBoxType;
-
-            [ReadOnly] public ArchetypeChunkEntityType ScoreBoxEntity;
-
-            [ReadOnly] [DeallocateOnJobCompletion] public NativeArray<ArchetypeChunk> Chunks;
-
-            public void Execute(Entity entity, int index, ref Player player, [ReadOnly] ref Translation position)
+            public void Execute(TriggerEvent triggerEvent)
             {
-                for (int i = 0; i < Chunks.Length; i++)
+                Entity entityA = triggerEvent.EntityA;
+                Entity entityB = triggerEvent.EntityB;
+
+                // Identify which colliding bodies contain which components
+                bool isBodyAScoreBox = ScoreBoxGroup.HasComponent(entityA);
+                bool isBodyBScoreBox = ScoreBoxGroup.HasComponent(entityB);
+
+                bool isBodyAPlayer = PlayerGroup.HasComponent(entityA);
+                bool isBodyBPlayer = PlayerGroup.HasComponent(entityB);
+
+                // If both colliding bodies have ScoreBox components, do nothing
+                if (isBodyAScoreBox && isBodyBScoreBox)
+                    return;
+
+                // Depending on which body is which, update the player score and destroy the ScoreBox entity
+                if (isBodyAScoreBox && isBodyBPlayer)
                 {
-                    var chunk = Chunks[i];
+                    var scoreBoxComponent = ScoreBoxGroup[entityA];
+                    var playerComponent = PlayerGroup[entityB];
 
-                    var translations = chunk.GetNativeArray(TranslationType);
-                    var scoreBoxes = chunk.GetNativeArray(ScoreBoxType);
-                    var scoreBoxEntities = chunk.GetNativeArray(ScoreBoxEntity);
+                    playerComponent.Score += scoreBoxComponent.Points;
+                    PlayerGroup[entityB] = playerComponent;
 
-                    for (int j = 0; j < scoreBoxes.Length; j++)
-                    {
-                        // Calculate the distance between the ScoreBox and Player
-                        // Use squared distance value to increase performance (saves call to sqrt())
-                        float dist = math.distancesq(position.Value, translations[j].Value);
+                    CommandBuffer.DestroyEntity(triggerEvent.EntityA);
+                }
 
-                        // If close enough for collision, add to the score and destroy the entity
-                        // Check the squared value of distance threshold (2^2 = 4)
-                        if (dist < 4.0f)
-                        {
-                            player.Score += scoreBoxes[j].ScoreValue;
-                            CommandBuffer.DestroyEntity(index, scoreBoxEntities[j]);
-                        }
-                    }
+                if (isBodyBScoreBox && isBodyAPlayer)
+                {
+                    var scoreBoxComponent = ScoreBoxGroup[entityB];
+                    var playerComponent = PlayerGroup[entityA];
+
+                    playerComponent.Score += scoreBoxComponent.Points;
+                    PlayerGroup[entityA] = playerComponent;
+
+                    CommandBuffer.DestroyEntity(triggerEvent.EntityB);
                 }
             }
         }
 
-        protected override JobHandle OnUpdate(JobHandle inputDeps)
+        protected override void OnUpdate()
         {
-            var translationType = GetArchetypeChunkComponentType<Translation>(true);
-            var scoreBoxType = GetArchetypeChunkComponentType<ScoreBox>(true);
-            var scoreBoxEntity = GetArchetypeChunkEntityType();
-            var chunks = ScoreBoxGroup.CreateArchetypeChunkArrayAsync(Allocator.TempJob, out var handle);
+            var commandBuffer = CommandBufferSystem.CreateCommandBuffer();
 
-            // Create the job and add dependency
-            var collisionJobHandle = new CollisionJob
+            Dependency = new ScoreBoxCollisionEventJob()
             {
-                CommandBuffer = m_EntityCommandBufferSystem.CreateCommandBuffer().ToConcurrent(),
-                TranslationType = translationType,
-                ScoreBoxType = scoreBoxType,
-                ScoreBoxEntity = scoreBoxEntity,
-                Chunks = chunks,
-            }.Schedule(this, JobHandle.CombineDependencies(inputDeps, handle));
+                CommandBuffer = commandBuffer,
+                ScoreBoxGroup = GetComponentDataFromEntity<ScoreBox>(true),
+                PlayerGroup = GetComponentDataFromEntity<Player>()
+            }
+            .Schedule(StepPhysicsWorldSystem.Simulation, ref BuildPhysicsWorldSystem.PhysicsWorld, Dependency);
 
-            // Pass final handle to barrier system to ensure dependency completion
-            // Tell the barrier system which job needs to be completed before the commands can be played back
-            m_EntityCommandBufferSystem.AddJobHandleForProducer(collisionJobHandle);
-
-            return collisionJobHandle;
+            Dependency.Complete();
         }
     }
 }

@@ -1,42 +1,34 @@
-﻿using UnityEngine;
-using Unity.Entities;
-using Unity.Transforms;
+﻿using Unity.Entities;
 using Unity.Jobs;
 using Unity.Mathematics;
-using Unity.Collections;
-using Unity.Burst;
+using Unity.Physics;
+using UnityEngine;
 
 namespace SimpleECS
 {
-    /*
-    * Utilizes C# Job System to process movement for Player entity based on user input.
-   */
-    public class MovementSystem : JobComponentSystem
+    [AlwaysSynchronizeSystem]
+    public class MovementSystem : SystemBase
     {
-        [BurstCompile]
-        [RequireComponentTag(typeof(Player))]
-        struct MovementJob : IJobForEach<Translation, MoveSpeed>
+        protected override void OnUpdate()
         {
-            public float DeltaTime;
-            public float HorizontalInput;
-            public float VerticalInput;
+            float deltaTime = Time.DeltaTime;
 
-            public void Execute(ref Translation position, [ReadOnly] ref MoveSpeed moveSpeed)
-            {
-                position.Value += new float3(HorizontalInput, 0.0f, VerticalInput) * moveSpeed.Value * DeltaTime;
-            }
-        }
+            float horizontalInput = Input.GetAxis("Horizontal");
+            float verticalInput = Input.GetAxis("Vertical");
 
-        protected override JobHandle OnUpdate(JobHandle inputDeps)
-        {
-            MovementJob movementJob = new MovementJob
-            {
-                DeltaTime = Time.DeltaTime,
-                HorizontalInput = Input.GetAxis("Horizontal"),
-                VerticalInput = Input.GetAxis("Vertical"),
-            };
+            Entities
+                .WithBurst()
+                .WithAll<Player>()
+                .ForEach((ref PhysicsVelocity velocity, in MoveSpeed moveSpeed) =>
+                {
+                    float3 currentVelocity = velocity.Linear;
+                    float3 inputVelocity = new float3(horizontalInput, 0.0f, verticalInput);
 
-            return movementJob.Schedule(this, inputDeps);
+                    currentVelocity += inputVelocity * moveSpeed.Value * deltaTime;
+
+                    velocity.Linear = currentVelocity;
+                })
+                .Run();
         }
     }
 }

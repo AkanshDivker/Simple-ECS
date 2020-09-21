@@ -1,12 +1,9 @@
 ﻿using Unity.Entities;
-using System;
 
 namespace SimpleECS
 {
-    /*
-     * Component data for rotation speed of an entity.
-    */
-    [Serializable]
+    // Component data for rotation speed of an entity.
+    [GenerateAuthoringComponent]
     public struct RotationSpeed : IComponentData
     {
         public float Value;

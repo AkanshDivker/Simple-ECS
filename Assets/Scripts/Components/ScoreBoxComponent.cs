@@ -1,14 +1,11 @@
 ﻿using Unity.Entities;
-using System;
 
 namespace SimpleECS
 {
-    /*
-     * Component data for a ScoreBox entity.
-    */
-    [Serializable]
+    // Component data for a ScoreBox entity.
+    [GenerateAuthoringComponent]
     public struct ScoreBox : IComponentData
     {
-        public int ScoreValue;
+        public int Points;
     }
 }

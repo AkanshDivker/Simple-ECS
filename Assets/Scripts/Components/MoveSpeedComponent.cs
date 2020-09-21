@@ -1,12 +1,9 @@
 ﻿using Unity.Entities;
-using System;
 
 namespace SimpleECS
 {
-    /*
-     * Component data for movement speed of an entity.
-    */
-    [Serializable]
+    // Component data for movement speed of an entity.
+    [GenerateAuthoringComponent]
     public struct MoveSpeed : IComponentData
     {
         public float Value;
