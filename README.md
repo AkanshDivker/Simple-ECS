@@ -23,7 +23,7 @@ You can get started by cloning the repository on your desktop. Since ECS is in p
 
 ### Prerequisites
 
-This project requires Unity 2020.1 or later. You will also need the following packages, which can be added through the **Package Manager** window.
+This project requires Unity 2020.2 or later. You will also need the following packages, which can be added through the **Package Manager** window.
 
 ```
 Entities (com.unity.entities)
