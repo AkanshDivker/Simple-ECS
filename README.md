@@ -10,17 +10,12 @@ Since ECS is still under development, I will keep this project updated as things
 - Implements the Entity Component System
 - Implements the C# Job System
 - Implements Unity Physics Collisions and Movement with C# Job System
+- Implements Hybrid Renderer
+- Implements Burst Compiler
 
-### Changelog
+### Changes
 
-**September 21, 2020**
-- Updated project for Entities 0.14.0-preview.19
-- Updated project for Hybrid Renderer 0.8.0-preview.19
-- Added Unity Physics 0.5.0-preview.1
-- Updated DOTS workflow and style to match current standards and practices
-- Changed Movement and Collision systems to use Unity Physics instead
-
-To view a log of all the previous changes DOTS and this project have gone through, please view the [CHANGELOG.md](CHANGELOG.md) file for details.
+To view a log of all the previous changes DOTS and this project have gone through, please view the [CHANGES.md](CHANGES.md) file for details.
 
 ## Getting Started
 
