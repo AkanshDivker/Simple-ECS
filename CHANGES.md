@@ -1,8 +1,8 @@
-# Simple ECS Changelog
+# Simple ECS Changes
 
 Recorded changelog for all changes with DOTS that have been applied to this project.
 
-### Changelog
+### Changes
 
 **December 16, 2020**
 - Updated project for Unity 2020.2
