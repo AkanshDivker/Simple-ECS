@@ -10,8 +10,8 @@ namespace SimpleECS
     // Utilizes C# Job System to process collisions between Player and ScoreBox entities.
     // Creating and removing entities can only be done inside the main thread.
     // This system uses an EntityCommandBuffer to handle tasks that can't be completed inside Jobs.
-    // Runs after physics system is done processing.
-    [UpdateAfter(typeof(EndFramePhysicsSystem))]
+    // Runs after physics/simulation system is done processing.
+    [UpdateInGroup(typeof(SimulationSystemGroup))]
     public class CollisionSystem : SystemBase
     {
         // Physics references
