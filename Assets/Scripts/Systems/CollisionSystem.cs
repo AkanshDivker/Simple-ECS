@@ -11,7 +11,8 @@ namespace SimpleECS
     // Creating and removing entities can only be done inside the main thread.
     // This system uses an EntityCommandBuffer to handle tasks that can't be completed inside Jobs.
     // Runs after physics/simulation system is done processing.
-    [UpdateInGroup(typeof(SimulationSystemGroup))]
+    [UpdateInGroup(typeof(FixedStepSimulationSystemGroup))]
+    [UpdateAfter(typeof(EndFramePhysicsSystem))]
     public class CollisionSystem : SystemBase
     {
         // Physics references
@@ -23,6 +24,8 @@ namespace SimpleECS
 
         protected override void OnCreate()
         {
+            base.OnCreate();
+
             BuildPhysicsWorldSystem = World.GetOrCreateSystem<BuildPhysicsWorld>();
             StepPhysicsWorldSystem = World.GetOrCreateSystem<StepPhysicsWorld>();
             CommandBufferSystem = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
@@ -47,11 +50,15 @@ namespace SimpleECS
                 bool isBodyAScoreBox = ScoreBoxGroup.HasComponent(entityA);
                 bool isBodyBScoreBox = ScoreBoxGroup.HasComponent(entityB);
 
+                // If both colliding bodies have ScoreBox components, do nothing
+                if (isBodyAScoreBox && isBodyBScoreBox)
+                    return;
+
                 bool isBodyAPlayer = PlayerGroup.HasComponent(entityA);
                 bool isBodyBPlayer = PlayerGroup.HasComponent(entityB);
 
-                // If both colliding bodies have ScoreBox components, do nothing
-                if (isBodyAScoreBox && isBodyBScoreBox)
+                // If both colliding bodies have Player components, do nothing
+                if (isBodyAPlayer && isBodyBPlayer)
                     return;
 
                 // Depending on which body is which, update the player score and destroy the ScoreBox entity
@@ -65,8 +72,7 @@ namespace SimpleECS
 
                     CommandBuffer.DestroyEntity(triggerEvent.EntityA);
                 }
-
-                if (isBodyBScoreBox && isBodyAPlayer)
+                else if (isBodyBScoreBox && isBodyAPlayer)
                 {
                     var scoreBoxComponent = ScoreBoxGroup[entityB];
                     var playerComponent = PlayerGroup[entityA];
