@@ -5,6 +5,14 @@ Recorded changelog for all changes with DOTS that have been applied to this proj
 ### Changes
 
 **December 16, 2020**
+- Updated project to use Universal Rendering Pipeline
+- Enable Hybrid Renderer v2
+- Updated packages
+- Updated MovementSystem physics update
+- Minor optimizations for CollisionSystem
+- Minor scene updates
+
+**December 16, 2020**
 - Updated project for Unity 2020.2
 - Updated packages
 - Updated CollisionSystem physics update
