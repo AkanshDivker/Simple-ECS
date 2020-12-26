@@ -1,8 +1,20 @@
-# Simple ECS Changelog
+# Simple ECS Changes
 
 Recorded changelog for all changes with DOTS that have been applied to this project.
 
-### Changelog
+### Changes
+
+**December 16, 2020**
+- Updated project for Unity 2020.2
+- Updated packages
+- Updated CollisionSystem physics update
+
+**September 21, 2020**
+- Updated project for Entities 0.14.0-preview.19
+- Updated project for Hybrid Renderer 0.8.0-preview.19
+- Added Unity Physics 0.5.0-preview.1
+- Updated DOTS workflow and style to match current standards and practices
+- Changed Movement and Collision systems to use Unity Physics instead
 
 **March 3, 2020**
 - Updated project for Entities preview.19 - 0.7.0
