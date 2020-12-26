@@ -4,8 +4,8 @@ namespace SimpleECS
 {
     // Component data for movement speed of an entity.
     [GenerateAuthoringComponent]
-    public struct MoveSpeed : IComponentData
+    public struct Movement : IComponentData
     {
-        public float Value;
+        public float Force;
     }
 }
