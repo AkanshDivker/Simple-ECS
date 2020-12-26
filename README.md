@@ -14,7 +14,7 @@ Since ECS is still under development, I will keep this project updated as things
 - Implements Burst Compiler
 
 **Planned Features**
-- Add NetCode support
+- Add NetCode Support
 - Convert More Systems to DOTS (Input, Camera, UI)
 - Add More Game Play Functionality
 
