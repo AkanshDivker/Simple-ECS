@@ -31,7 +31,7 @@ namespace SimpleECS
                     // Apply Linear Impulse from Physics Extension methods
                     PhysicsComponentExtensions.ApplyLinearImpulse(ref velocity, physicsMass, direction * movement.Force);
                 })
-                .Run();
+                .Schedule();
         }
     }
 }

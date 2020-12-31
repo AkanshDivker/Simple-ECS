@@ -19,8 +19,8 @@ namespace SimpleECS
         BuildPhysicsWorld BuildPhysicsWorldSystem;
         StepPhysicsWorld StepPhysicsWorldSystem;
 
-        // BeginInitializationEntityCommandBufferSystem is used to create a command buffer that will be played back when the barrier system executes.
-        BeginInitializationEntityCommandBufferSystem CommandBufferSystem;
+        // EndFixedStepSimulationEntityCommandBufferSystem is used to create a command buffer that will be played back when the barrier system executes.
+        EndFixedStepSimulationEntityCommandBufferSystem EndFixedStepSimulationEcbSystem;
 
         protected override void OnCreate()
         {
@@ -28,7 +28,7 @@ namespace SimpleECS
 
             BuildPhysicsWorldSystem = World.GetOrCreateSystem<BuildPhysicsWorld>();
             StepPhysicsWorldSystem = World.GetOrCreateSystem<StepPhysicsWorld>();
-            CommandBufferSystem = World.GetOrCreateSystem<BeginInitializationEntityCommandBufferSystem>();
+            EndFixedStepSimulationEcbSystem = World.GetOrCreateSystem<EndFixedStepSimulationEntityCommandBufferSystem>();
         }
 
         // Job struct for handling collision response as trigger
@@ -87,7 +87,7 @@ namespace SimpleECS
 
         protected override void OnUpdate()
         {
-            var commandBuffer = CommandBufferSystem.CreateCommandBuffer();
+            var commandBuffer = EndFixedStepSimulationEcbSystem.CreateCommandBuffer();
 
             Dependency = new ScoreBoxCollisionEventJob()
             {
@@ -95,9 +95,10 @@ namespace SimpleECS
                 ScoreBoxGroup = GetComponentDataFromEntity<ScoreBox>(true),
                 PlayerGroup = GetComponentDataFromEntity<Player>()
             }
-            .Schedule(StepPhysicsWorldSystem.Simulation, ref BuildPhysicsWorldSystem.PhysicsWorld, Dependency);
+            .Schedule(StepPhysicsWorldSystem.Simulation, ref BuildPhysicsWorldSystem.PhysicsWorld, this.Dependency);
 
-            Dependency.Complete();
+            // Add the job as a dependency
+            EndFixedStepSimulationEcbSystem.AddJobHandleForProducer(this.Dependency);
         }
     }
 }
