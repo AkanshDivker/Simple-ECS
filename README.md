@@ -13,6 +13,11 @@ Since ECS is still under development, I will keep this project updated as things
 - Implements Hybrid Renderer
 - Implements Burst Compiler
 
+**Planned Features**
+- Add NetCode Support
+- Convert More Systems to DOTS (Input, Camera, UI)
+- Add More Game Play Functionality
+
 ### Changes
 
 To view a log of all the previous changes DOTS and this project have gone through, please view the [CHANGES.md](CHANGES.md) file for details.
