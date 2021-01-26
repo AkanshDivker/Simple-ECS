@@ -1017,7 +1017,7 @@ MonoBehaviour:
   MainCamera: {fileID: 963194225}
   ScoreBoxPrefab: {fileID: 864639482469842457, guid: 376fed816d50d4f4882e098977ee0ceb,
     type: 3}
-  ScoreBoxCount: 50000
+  ScoreBoxCount: 25
   CircleRadius: 8
   RotationSpeed: 50
 --- !u!4 &1442796383
